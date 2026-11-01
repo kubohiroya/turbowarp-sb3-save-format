@@ -1,0 +1,66 @@
+{
+  "name": "@kubohiroya/turbowarp-sb3-save-format",
+  "version": "0.1.0-rc.0",
+  "description": "The vocabulary for saving an SB3 in a chosen format: which form the extensions, the source data and the assets of one project are stored in.",
+  "author": {
+    "name": "Hiroya Kubo",
+    "email": "hiroya@cuc.ac.jp",
+    "url": "https://github.com/kubohiroya"
+  },
+  "license": "MPL-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "homepage": "https://github.com/kubohiroya/turbowarp-sb3-save-format#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kubohiroya/turbowarp-sb3-save-format.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kubohiroya/turbowarp-sb3-save-format/issues"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "README.md",
+    "README.ja.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --project tsconfig.build.json",
+    "pack:check": "pnpm pack --dry-run",
+    "release:check": "npm publish --dry-run --access public",
+    "check": "pnpm run typecheck && pnpm run test && pnpm run build && pnpm run pack:check"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "keywords": [
+    "turbowarp",
+    "scratch",
+    "sb3",
+    "save-format",
+    "extensions",
+    "assets"
+  ]
+}
