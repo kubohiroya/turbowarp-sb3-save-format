@@ -22,13 +22,16 @@ depended on by none of them in return.
 
 | Format | Where the bytes are |
 | --- | --- |
-| `remote` | Only an HTTPS reference is stored; the bytes are read at load or run time |
-| `cached` | An HTTPS reference is stored and verified bytes are kept beside it for offline use |
+| `remote-non-cacheable` | Only an HTTPS reference is stored; the bytes are fetched every time and no copy is kept |
+| `remote-cacheable` | Only an HTTPS reference is stored, and a verified copy may be kept in the browser |
 | `embedded-file` | A file inside the SB3 ZIP, named by a relative path |
-| `embedded-data` | Inside `project.json`, as a `data:` URL or a base64 field |
+| `embedded-data` | Inside `project.json`, as a `data:` URL — the one form a standard TurboWarp host opens on its own |
 
 A payload left unset in a selection is kept exactly as the project already stores it.
 `assetsAsProjectAssets` additionally stores each asset as a costume, a backdrop or a sound.
+
+These are the Loader's four Manifest source types, spelled identically, so a choice made in a save
+screen reaches the Manifest without being translated.
 
 This refines **where** the bytes are, not how a payload is represented. A document source kind of
 [`@kubohiroya/turbowarp-document-source`](https://github.com/kubohiroya/turbowarp-document-source)
@@ -54,20 +57,20 @@ import {
 // A converter that rewrites extensions only.
 const capabilities = sb3SaveCapabilities({
   formats: {
-    'source:remote': 'A remote source document is owned by turbowarp-document-source.',
+    'source:remote-non-cacheable': 'A remote source document is owned by turbowarp-document-source.',
     // ...one entry per pair this implementation cannot write
   },
   projectAssets: 'Use the asset conversion command instead of this one.',
 });
 
 describeSb3SaveFormats(capabilities);
-// 'extensions: remote|cached|embedded-file|embedded-data; source: kept as built; assets: ...'
+// 'extensions: remote-non-cacheable|remote-cacheable|embedded-file|embedded-data; source: ...'
 
-normalizeSb3SaveSelection({extensions: 'cached'}, capabilities);
-// {extensions: 'cached', source: undefined, assets: undefined, assetsAsProjectAssets: false}
+normalizeSb3SaveSelection({extensions: 'remote-cacheable'}, capabilities);
+// {extensions: 'remote-cacheable', source: undefined, assets: undefined, assetsAsProjectAssets: false}
 
-normalizeSb3SaveSelection({source: 'remote'}, capabilities);
-// TypeError: Cannot save source as remote: A remote source document is owned by ...
+normalizeSb3SaveSelection({source: 'remote-non-cacheable'}, capabilities);
+// TypeError: Cannot save source as remote-non-cacheable: A remote source document is owned by ...
 ```
 
 A named payload is never silently downgraded or ignored: a choice the capabilities cannot honour is

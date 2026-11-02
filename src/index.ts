@@ -17,19 +17,36 @@
 export type Sb3SavePayload = 'extensions' | 'source' | 'assets';
 
 /**
- * Where the bytes of one payload live in a saved SB3.
+ * Where the bytes of one payload live in a saved SB3, as the author of the work decided.
  *
- * - `remote`: only an HTTPS reference is stored, and the bytes are read at load or run time.
- * - `cached`: an HTTPS reference is stored and verified bytes are kept beside it for offline use.
+ * - `remote-non-cacheable`: only an HTTPS reference is stored, and the bytes are fetched every
+ *   time. Nothing is kept in the browser either: the author forbids a copy, because a copy hides
+ *   a URL that stopped serving the pinned bytes until the copy runs out, and a work handed to a
+ *   shared machine should leave no code behind.
+ * - `remote-cacheable`: only an HTTPS reference is stored, and a verified copy may be kept in the
+ *   browser. Whether one actually is kept is the opener's to decline.
  * - `embedded-file`: the bytes are a file inside the SB3 ZIP, named by a relative path.
- * - `embedded-data`: the bytes are inside `project.json`, as a `data:` URL or a base64 field.
+ * - `embedded-data`: the bytes are inside `project.json`, as a `data:` URL. This is also the one
+ *   form a standard TurboWarp host opens on its own, because it reads `extensionURLs` and knows
+ *   nothing of the Plus Manifest.
+ *
+ * The last two are siblings: both make a work that runs offline, anywhere, on its own. They
+ * differ in the carrier, and the carrier decides who else can read it.
+ *
+ * These are the Loader's four Manifest source types, spelled identically. One vocabulary, so a
+ * choice made in a save screen reaches the Manifest without being translated — every cross-layer
+ * defect this family has had came from a translation.
  *
  * This refines where the bytes are, not how a payload is represented. A document source kind of
  * `@kubohiroya/turbowarp-document-source` also spells one of its values `embedded-file`, but that
  * is a reference kind and its representation (text, YAML blocks, schema blocks) is independent.
  * The two are deliberately separate types, and neither is an alias of the other.
  */
-export type Sb3SaveFormat = 'remote' | 'cached' | 'embedded-file' | 'embedded-data';
+export type Sb3SaveFormat =
+  | 'remote-non-cacheable'
+  | 'remote-cacheable'
+  | 'embedded-file'
+  | 'embedded-data';
 
 export const sb3SavePayloads: readonly Sb3SavePayload[] = Object.freeze([
   'extensions',
@@ -38,8 +55,8 @@ export const sb3SavePayloads: readonly Sb3SavePayload[] = Object.freeze([
 ]);
 
 export const sb3SaveFormats: readonly Sb3SaveFormat[] = Object.freeze([
-  'remote',
-  'cached',
+  'remote-non-cacheable',
+  'remote-cacheable',
   'embedded-file',
   'embedded-data',
 ]);

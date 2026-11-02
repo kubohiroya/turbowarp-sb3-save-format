@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.0-rc.0
+
+- **Breaking.** Rename the four forms to the Loader's four Manifest source types, spelled
+  identically: `remote` becomes `remote-non-cacheable`, `cached` becomes `remote-cacheable`, and
+  `embedded-file` / `embedded-data` stay. One vocabulary, so a choice made in a save screen reaches
+  the Manifest without being translated.
+- The old `cached` was not simply renamed. Here it meant bytes in the ZIP beside a URL, and one
+  layer over it meant the opposite — nothing in the SB3, a verified copy in the browser. A work
+  carrying its own bytes is embedded, so the name was wrong. `remote-cacheable` stores only the
+  reference and leaves the copy to the opener, who may decline it.
+- `remote-non-cacheable` says the author forbids a copy: a copy hides a URL that stopped serving
+  the pinned bytes until the copy runs out, and a work handed to a shared machine should leave no
+  code behind.
+
+This follows turbowarp-kamishibai-app#1121, which made the same change to the vocabulary's original
+home. 0.1.0-rc.0 had no consumers.
+
 ## 0.1.0-rc.0
 
 - Extract the "save in a chosen format" vocabulary from `src/builder/sb3-save-format.ts` of

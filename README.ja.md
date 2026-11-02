@@ -18,12 +18,14 @@ English: [README.md](README.md)
 
 | 形式 | バイト列の所在 |
 | --- | --- |
-| `remote` | HTTPS参照だけを格納し、バイト列は読込時または実行時に取得する |
-| `cached` | HTTPS参照を格納し、検証済みバイト列をその隣に保持してオフラインでも使う |
+| `remote-non-cacheable` | HTTPS参照だけを格納し、バイト列は毎回取得する。控えも残さない |
+| `remote-cacheable` | HTTPS参照だけを格納し、検証済みの控えをブラウザに保持してよい |
 | `embedded-file` | SB3 ZIP内のファイル。相対パスで指す |
-| `embedded-data` | `project.json` の中。`data:` URLまたはbase64のフィールド |
+| `embedded-data` | `project.json` の中の `data:` URL。標準のTurboWarpホストが自力で開ける唯一の形 |
 
 選択で指定しなかったpayloadは、作品が既に格納している形のまま保持します。`assetsAsProjectAssets` は、各アセットをコスチューム・背景・音としても格納します。
+
+この4つは Loader の Manifest の source type と同じ綴りです。保存画面での選択が翻訳されずに Manifest へ届くようにするためです。
 
 これはバイト列が**どこにあるか**を細かくするもので、payloadの表現方法ではありません。[`@kubohiroya/turbowarp-document-source`](https://github.com/kubohiroya/turbowarp-document-source) の文書ソース種別にも `embedded-file` という値がありますが、あちらは参照の種別で、表現（テキスト・YAMLブロック・スキーマブロック）は独立しています。両者は別の型のままにし、片方をもう片方のaliasにしません。
 
@@ -41,20 +43,20 @@ import {
 // 機能拡張だけを書き換える変換器の場合
 const capabilities = sb3SaveCapabilities({
   formats: {
-    'source:remote': 'remoteのソース文書は turbowarp-document-source が所有します。',
+    'source:remote-non-cacheable': 'remoteのソース文書は turbowarp-document-source が所有します。',
     // ...この実装が書けない組み合わせを1件ずつ
   },
   projectAssets: 'このコマンドではなくアセット変換コマンドを使ってください。',
 });
 
 describeSb3SaveFormats(capabilities);
-// 'extensions: remote|cached|embedded-file|embedded-data; source: kept as built; assets: ...'
+// 'extensions: remote-non-cacheable|remote-cacheable|embedded-file|embedded-data; source: ...'
 
-normalizeSb3SaveSelection({extensions: 'cached'}, capabilities);
-// {extensions: 'cached', source: undefined, assets: undefined, assetsAsProjectAssets: false}
+normalizeSb3SaveSelection({extensions: 'remote-cacheable'}, capabilities);
+// {extensions: 'remote-cacheable', source: undefined, assets: undefined, assetsAsProjectAssets: false}
 
-normalizeSb3SaveSelection({source: 'remote'}, capabilities);
-// TypeError: Cannot save source as remote: remoteのソース文書は ...
+normalizeSb3SaveSelection({source: 'remote-non-cacheable'}, capabilities);
+// TypeError: Cannot save source as remote-non-cacheable: remoteのソース文書は ...
 ```
 
 指定したpayloadを黙って格下げしたり無視したりはしません。対応できない選択は、payload・形式・足りないものを挙げて拒否します。
