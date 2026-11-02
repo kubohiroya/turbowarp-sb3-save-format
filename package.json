@@ -1,6 +1,6 @@
 {
   "name": "@kubohiroya/turbowarp-sb3-save-format",
-  "version": "0.3.0-rc.0",
+  "version": "0.4.0-rc.0",
   "description": "The vocabulary for saving an SB3 in a chosen format: which form the extensions, the source data and the assets of one project are stored in.",
   "author": {
     "name": "Hiroya Kubo",
@@ -34,7 +34,11 @@
       "types": "./dist/dialog-model.d.ts",
       "import": "./dist/dialog-model.js"
     },
-    "./styles.css": "./styles.css"
+    "./styles.css": "./styles.css",
+    "./writer": {
+      "types": "./dist/writer.d.ts",
+      "import": "./dist/writer.js"
+    }
   },
   "files": [
     "CHANGELOG.md",
@@ -62,6 +66,7 @@
     "check": "pnpm run typecheck && pnpm run test && pnpm run build && pnpm run pack:check"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "@types/react": "^18.3.12",
     "react": "^18.3.1",
     "typescript": "^5.9.3",
@@ -84,5 +89,8 @@
     "react": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "@kubohiroya/turbowarp-extension-loader": "^0.6.0"
   }
 }

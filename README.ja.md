@@ -93,6 +93,23 @@ import '@kubohiroya/turbowarp-sb3-save-format/styles.css';
 
 コンポーネントは古典的なJSXランタイムで出力しています。React 16 のホストがこれを必要とするためです。`draft` と `onDraftChange` を渡すと制御でき、渡さなければ自分で下書きを保持します。
 
+## 形式を書く（Node）
+
+`./writer` は、展開済みのSB3に形式を書きます。アーカイブのエントリと解析済みの作品を受け取るので、ZIPへの詰め直しは呼び出し側の仕事です。`node:crypto` でハッシュを取るため別の入口にしてあり、root の export は依存ゼロのままです。
+
+```ts
+import {sb3SaveCapabilities} from '@kubohiroya/turbowarp-sb3-save-format';
+import {writeSb3ExtensionFormat} from '@kubohiroya/turbowarp-sb3-save-format/writer';
+
+await writeSb3ExtensionFormat(archive, project, 'embedded-file', {
+  capabilities: sb3SaveCapabilities(),  // 必須: このビルドが書ける範囲
+  unsandboxed: ['my.extension.id'],     // unsandboxed を要求してよい唯一のID
+  urls: {'my.extension.id': 'https://example.test/ext.js'}
+});
+```
+
+ブラウザはこれを必要としません。控えがバイト列の出所になり得る変換はローダーの `prepareExtensionAddition` の担当で、あちらは cache port を持ちます。この writer は持たないので出所はネットワークだけです。つまり**作品がどの形式を記録するか**は書けますが、見る人のブラウザにある控えには関与できません。
+
 ## API
 
 - `Sb3SavePayload`、`Sb3SaveFormat`、`sb3SavePayloads`、`sb3SaveFormats`、`sb3SaveFormatKey`

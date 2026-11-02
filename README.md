@@ -115,6 +115,28 @@ import '@kubohiroya/turbowarp-sb3-save-format/styles.css';
 The component is emitted with the classic JSX runtime, which React 16 hosts need. Pass `draft` and
 `onDraftChange` to control it; leave them out and it keeps its own draft.
 
+## Writing a chosen form (Node)
+
+`./writer` writes a form into an SB3 that is already unpacked: it takes the archive entries and the
+parsed project, so packing stays with the caller. It is a separate entry point because it hashes
+with `node:crypto`; the root export stays dependency-free.
+
+```ts
+import {sb3SaveCapabilities} from '@kubohiroya/turbowarp-sb3-save-format';
+import {writeSb3ExtensionFormat} from '@kubohiroya/turbowarp-sb3-save-format/writer';
+
+await writeSb3ExtensionFormat(archive, project, 'embedded-file', {
+  capabilities: sb3SaveCapabilities(),  // required: what this build can write
+  unsandboxed: ['my.extension.id'],     // the only IDs that may ask for an unsandboxed host
+  urls: {'my.extension.id': 'https://example.test/ext.js'}
+});
+```
+
+A browser does not need this. Converting a form whose bytes may come from the cached copy is the
+loader's `prepareExtensionAddition`, which has a cache port. This writer has none, so its only byte
+source is the network: it can write **which form a work records**, never the copy a viewer's
+browser holds.
+
 ## API
 
 - `Sb3SavePayload`, `Sb3SaveFormat`, `sb3SavePayloads`, `sb3SaveFormats`, `sb3SaveFormatKey`

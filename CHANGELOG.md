@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.0-rc.0
+
+- Add `./writer`: writing the chosen form into an SB3 that is already unpacked. Moved here from
+  `src/builder/sb3-extension-format.ts` of turbowarp-kamishibai-app, where the vocabulary's only
+  writer lived in one application.
+- It is a separate entry point, not part of the root, because it hashes with `node:crypto`. The
+  root export stays dependency-free and safe to bundle for a browser.
+- A browser does not need it. Converting a form whose bytes may come from the cached copy is the
+  loader's `prepareExtensionAddition`, which has a cache port and verifies with `crypto.subtle`.
+  This writer has none, so its only byte source is the network: it can write which form a work
+  records, never the copy a viewer's browser holds.
+- Two things changed in the move, both pushing knowledge back to the caller. Which IDs may be
+  requested unsandboxed is now named by the caller alone — the application's own three extension
+  IDs stayed in that application — and `capabilities` is a required option, because "writable" is
+  a property of the build doing the writing, not of the vocabulary.
+- Adds a dependency on `@kubohiroya/turbowarp-extension-loader`: the four forms are its Manifest
+  source types, so reading and writing a Manifest belongs with it.
+
 ## 0.3.0-rc.0
 
 - Add the dialog. `./dialog-model` holds every rule about what can be chosen, derived from one
