@@ -1,6 +1,6 @@
 {
   "name": "@kubohiroya/turbowarp-sb3-save-format",
-  "version": "0.2.0-rc.0",
+  "version": "0.3.0-rc.0",
   "description": "The vocabulary for saving an SB3 in a chosen format: which form the extensions, the source data and the assets of one project are stored in.",
   "author": {
     "name": "Hiroya Kubo",
@@ -25,15 +25,25 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./dialog-model": {
+      "types": "./dist/dialog-model.d.ts",
+      "import": "./dist/dialog-model.js"
+    },
+    "./styles.css": "./styles.css"
   },
   "files": [
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.ja.md",
+    "README.md",
     "dist/",
     "src/",
-    "README.md",
-    "README.ja.md",
-    "CHANGELOG.md",
-    "LICENSE"
+    "styles.css"
   ],
   "publishConfig": {
     "access": "public",
@@ -52,15 +62,27 @@
     "check": "pnpm run typecheck && pnpm run test && pnpm run build && pnpm run pack:check"
   },
   "devDependencies": {
+    "@types/react": "^18.3.12",
+    "react": "^18.3.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   },
   "keywords": [
-    "turbowarp",
-    "scratch",
-    "sb3",
-    "save-format",
+    "assets",
+    "dialog",
     "extensions",
-    "assets"
-  ]
+    "react",
+    "save-format",
+    "sb3",
+    "scratch",
+    "turbowarp"
+  ],
+  "peerDependencies": {
+    "react": "^16.14.0 || ^17 || ^18 || ^19"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
 }

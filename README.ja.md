@@ -61,6 +61,38 @@ normalizeSb3SaveSelection({source: 'remote-non-cacheable'}, capabilities);
 
 指定したpayloadを黙って格下げしたり無視したりはしません。対応できない選択は、payload・形式・足りないものを挙げて拒否します。
 
+## ダイアログ
+
+`./dialog-model` は capabilities と下書きから、ダイアログが描く行を作ります。DOMにも依存せず、依存パッケージもありません。何を選べるかの規則はすべてここにあるので、一度テストすれば済み、CLIから同じ行を印字することもできます。
+
+```ts
+import {sb3SaveDialogModel, chooseSb3SaveFormat} from '@kubohiroya/turbowarp-sb3-save-format/dialog-model';
+
+const model = sb3SaveDialogModel(capabilities, chooseSb3SaveFormat({}, 'extensions', 'remote-cacheable'));
+model.rows;          // payloadごとに1行。各選択肢は enabled と、無効なときの理由を持つ
+model.selection;     // 書ける選択だけ。そのまま保存へ渡せる
+model.refusals;      // このビルドが書けない下書きの選択と、足りないもの
+model.unchanged;     // 何も変わらない選択なら true
+```
+
+書けない形式は隠さず、理由を添えて無効表示にします。それを探して来た人には、何が足りないのかが分かる必要があります。書けない形式を持つ下書きはエラーではありません（別のビルドで保存された作品が持ち得ます）。そのpayloadはそのまま保持し、理由を報告します。
+
+`./react` がその行を描き、`./styles.css` が自分の範囲に限ったスタイルを持ちます。React は任意のpeerなので、root の export を使うNodeのCLIにReactは入りません。
+
+```tsx
+import {Sb3SaveFormatDialog} from '@kubohiroya/turbowarp-sb3-save-format/react';
+import '@kubohiroya/turbowarp-sb3-save-format/styles.css';
+
+<Sb3SaveFormatDialog
+  capabilities={capabilities}
+  language="ja"
+  onSave={(selection) => save(selection)}
+  onCancel={close}
+/>;
+```
+
+コンポーネントは古典的なJSXランタイムで出力しています。React 16 のホストがこれを必要とするためです。`draft` と `onDraftChange` を渡すと制御でき、渡さなければ自分で下書きを保持します。
+
 ## API
 
 - `Sb3SavePayload`、`Sb3SaveFormat`、`sb3SavePayloads`、`sb3SaveFormats`、`sb3SaveFormatKey`

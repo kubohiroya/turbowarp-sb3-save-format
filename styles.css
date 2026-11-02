@@ -1,0 +1,75 @@
+/*
+ * The dialog's own styles. A host loads this file once; nothing here depends on the host's
+ * stylesheet, and every rule is scoped under .twp-save-format so it cannot reach the page.
+ */
+.twp-save-format {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  font: inherit;
+  color: inherit;
+}
+
+.twp-save-format__title {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.twp-save-format__refusals {
+  padding: 8px 12px;
+  border-left: 3px solid currentColor;
+  opacity: 0.85;
+  font-size: 0.9em;
+}
+
+.twp-save-format__refusals p,
+.twp-save-format__refusals ul {
+  margin: 4px 0;
+}
+
+.twp-save-format__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  opacity: 0.999; /* keeps the border crisp against a translucent host backdrop */
+}
+
+.twp-save-format__row legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.twp-save-format__option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+
+.twp-save-format__option--disabled {
+  opacity: 0.55;
+}
+
+.twp-save-format__reason {
+  grid-column: 2;
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+.twp-save-format__note {
+  margin: 0;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.twp-save-format__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

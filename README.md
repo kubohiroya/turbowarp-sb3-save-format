@@ -76,6 +76,45 @@ normalizeSb3SaveSelection({source: 'remote-non-cacheable'}, capabilities);
 A named payload is never silently downgraded or ignored: a choice the capabilities cannot honour is
 refused, naming the payload, the format and what is missing.
 
+## The dialog
+
+`./dialog-model` turns capabilities and a draft into the rows a dialog draws, with no DOM and no
+dependencies. Every rule about what can be chosen lives there, so it is tested once and a CLI can
+print the same rows.
+
+```ts
+import {sb3SaveDialogModel, chooseSb3SaveFormat} from '@kubohiroya/turbowarp-sb3-save-format/dialog-model';
+
+const model = sb3SaveDialogModel(capabilities, chooseSb3SaveFormat({}, 'extensions', 'remote-cacheable'));
+model.rows;          // one per payload; each option carries enabled + the reason when disabled
+model.selection;     // only honourable choices — pass it straight to a save
+model.refusals;      // a draft choice this build cannot write, and what is missing
+model.unchanged;     // true when the selection would change nothing
+```
+
+A form the host cannot write is shown disabled with its reason rather than hidden: someone who
+came looking for it should learn what is missing. A draft that names such a form is not an error —
+a project saved by another build can carry one — so that payload is kept as built and the reason
+is reported.
+
+`./react` draws the model, and `./styles.css` carries its own scoped styles. React is an optional
+peer, so a Node CLI importing the root export has no React in its tree.
+
+```tsx
+import {Sb3SaveFormatDialog} from '@kubohiroya/turbowarp-sb3-save-format/react';
+import '@kubohiroya/turbowarp-sb3-save-format/styles.css';
+
+<Sb3SaveFormatDialog
+  capabilities={capabilities}
+  language="ja"
+  onSave={(selection) => save(selection)}
+  onCancel={close}
+/>;
+```
+
+The component is emitted with the classic JSX runtime, which React 16 hosts need. Pass `draft` and
+`onDraftChange` to control it; leave them out and it keeps its own draft.
+
 ## API
 
 - `Sb3SavePayload`, `Sb3SaveFormat`, `sb3SavePayloads`, `sb3SaveFormats`, `sb3SaveFormatKey`

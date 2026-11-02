@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0-rc.0
+
+- Add the dialog. `./dialog-model` holds every rule about what can be chosen, derived from one
+  implementation's capabilities and dependency-free, so a CLI can print the same rows a dialog
+  draws. `./react` draws them, and `./styles.css` carries its own scoped styles.
+- A form the host cannot write is shown disabled with the reason beside it rather than hidden: a
+  person who came looking for it should learn what is missing.
+- A draft naming a form the host cannot write is not an error — a project saved by another build
+  can carry one. The payload is kept as built, the reason is reported in `refusals`, and the
+  selection a save receives holds only honourable choices.
+- React is an optional peer (`^16.14 || ^17 || ^18 || ^19`) and the root export stays
+  dependency-free, so a Node CLI still imports the vocabulary with no React in its tree. The
+  component is emitted with the classic JSX runtime, which React 16 hosts need.
+
 ## 0.2.0-rc.0
 
 - **Breaking.** Rename the four forms to the Loader's four Manifest source types, spelled
