@@ -91,6 +91,6 @@
     }
   },
   "dependencies": {
-    "@kubohiroya/turbowarp-extension-loader": "^0.6.0"
+    "@kubohiroya/turbowarp-extension-loader": "^0.7.0"
   }
 }
