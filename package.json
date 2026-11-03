@@ -1,6 +1,6 @@
 {
   "name": "@kubohiroya/turbowarp-sb3-save-format",
-  "version": "0.4.0-rc.0",
+  "version": "0.4.0-rc.1",
   "description": "The vocabulary for saving an SB3 in a chosen format: which form the extensions, the source data and the assets of one project are stored in.",
   "author": {
     "name": "Hiroya Kubo",

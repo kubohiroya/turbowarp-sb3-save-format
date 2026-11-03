@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.4.0-rc.1
+
+Released on 2026-11-03. One dependency change, no API change.
+
 - Depend on the loader `^0.7.0` instead of `^0.6.0`. A `^0.6.0` range does not accept 0.7.0, so a
   host on the 0.7.0 loader got a second, nested 0.6.0 copy for `./writer`, and the SB3 it wrote and
   the one the host read went through different loaders. 0.7.0 only adds API, so nothing here
