@@ -1,6 +1,6 @@
 {
   "name": "@kubohiroya/turbowarp-sb3-save-format",
-  "version": "0.4.0-rc.2",
+  "version": "0.4.0-rc.3",
   "description": "The vocabulary for saving an SB3 in a chosen format: which form the extensions, the source data and the assets of one project are stored in.",
   "author": {
     "name": "Hiroya Kubo",
@@ -38,6 +38,21 @@
     "./writer": {
       "types": "./dist/writer.d.ts",
       "import": "./dist/writer.js"
+    },
+    "./project-payloads": {
+      "types": "./dist/project-payloads.d.ts",
+      "import": "./dist/project-payloads.js",
+      "default": "./dist/project-payloads.js"
+    },
+    "./native-assets": {
+      "types": "./dist/native-assets.d.ts",
+      "import": "./dist/native-assets.js",
+      "default": "./dist/native-assets.js"
+    },
+    "./project-payload-host": {
+      "types": "./dist/project-payload-host.d.ts",
+      "import": "./dist/project-payload-host.js",
+      "default": "./dist/project-payload-host.js"
     }
   },
   "files": [
@@ -47,7 +62,8 @@
     "README.md",
     "dist/",
     "src/",
-    "styles.css"
+    "styles.css",
+    "EDITOR-MIGRATION.md"
   ],
   "publishConfig": {
     "access": "public",
@@ -91,6 +107,7 @@
     }
   },
   "dependencies": {
-    "@kubohiroya/turbowarp-extension-loader": "^0.8.0"
+    "@kubohiroya/turbowarp-extension-loader": "^0.11.1",
+    "@turbowarp/jszip": "3.12.0"
   }
 }

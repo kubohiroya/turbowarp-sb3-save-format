@@ -129,3 +129,8 @@ pnpm run check   # typecheck、テスト、ビルド、pack --dry-run
 ## ライセンス
 
 [MPL-2.0](LICENSE)。語彙は [turbowarp-kamishibai-app](https://github.com/kubohiroya/turbowarp-kamishibai-app) の `src/builder/sb3-save-format.ts` から切り出しました。同じライセンス・同じ著者です。
+
+## Editor の実装との責務分担
+
+Editor 独自実装の移管元とライセンス確認は [EDITOR-MIGRATION.md](EDITOR-MIGRATION.md) に記録しています。
+追加した公開 API は GUI モジュールを import せず、ホストから必要な値・データ・コールバックを受け取ります。
