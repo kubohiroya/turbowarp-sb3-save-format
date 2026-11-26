@@ -80,6 +80,52 @@ function plusProject() {
 }
 
 describe('the carriers', () => {
+  it('pins the real remote extension and keeps only a small carrier for the standard host', async () => {
+    const project = embeddedDataProject();
+    const url = `https://example.test/${id}.js`;
+    const options = {urls: {[id]: url}, unsandboxed: [id], version: '1.2.3', remoteCompatibilityCarriers: [id]};
+    await write({}, project, 'remote-cacheable', options);
+    const carrier = project.extensionURLs[id] as string;
+    expect(carrier).toMatch(/^data:text\/javascript;base64,/);
+    const source = Buffer.from(carrier.split(',')[1]!, 'base64').toString();
+    expect(source).toContain('TurboWarp Plus remote compatibility carrier v1');
+    const spec = discoverManifest(project)!.extensions[0]!;
+    expect(spec.source).toEqual({type: 'remote-cacheable', url});
+    expect(spec.sha256).toBe(hex(code));
+    expect(spec.version).toBe('1.2.3');
+    expect(readSb3ExtensionPayloads({}, project)[0]?.bytes).toBeUndefined();
+
+    await write({}, project, 'remote-cacheable', options);
+    expect(project.extensionURLs[id]).toBe(carrier);
+    await write({}, project, 'embedded-data', {fetch: serving(code)});
+    expect(project.extensionURLs[id]).toBe(dataUrl(code));
+  });
+
+  it('refuses the carrier without opt-in to unsandboxed execution or alongside full embedding', async () => {
+    const project = embeddedDataProject();
+    const before = structuredClone(project);
+    const options = {urls: {[id]: `https://example.test/${id}.js`}, remoteCompatibilityCarriers: [id]};
+    await expect(write({}, project, 'remote-non-cacheable', options)).rejects.toMatchObject({
+      code: 'K4-EXT-FORMAT-010',
+    });
+    await expect(write({}, project, 'remote-cacheable', {
+      ...options, unsandboxed: [id], keepEmbeddedData: true,
+    })).rejects.toMatchObject({code: 'K4-EXT-FORMAT-010'});
+    expect(project).toEqual(before);
+  });
+
+  it('records the version from the original embedded extension header when available', async () => {
+    const project = embeddedDataProject(id, `// Version: 4.0.21\n${code}`);
+    await write({}, project, 'remote-non-cacheable', {
+      urls: {[id]: `https://example.test/${id}.js`},
+      unsandboxed: [id],
+      remoteCompatibilityCarriers: [id],
+    });
+    expect(discoverManifest(project)!.extensions[0]?.version).toBe('4.0.21');
+    expect(Buffer.from((project.extensionURLs[id] as string).split(',')[1]!, 'base64').toString())
+      .toContain('"version":"4.0.21"');
+  });
+
   it('round-trips the exact bytes between embedded-data and embedded-file', async () => {
     const archive: Record<string, Uint8Array> = {};
     const project = embeddedDataProject();

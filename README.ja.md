@@ -108,6 +108,8 @@ await writeSb3ExtensionFormat(archive, project, 'embedded-file', {
 });
 ```
 
+`remoteCompatibilityCarriers: ['拡張ID']` を指定すると、リモート形式の Plus Manifest に加え、標準 TurboWarp 用の小さな `data:` スクリプトを格納します。対象はサンドボックス外で動く、評価時に同期的に登録する拡張です。標準ホストで閲覧者が拡張の実行とネットワーク取得を許可すると、キャリアは固定した HTTPS URL から本体を取得し、SHA-256 を照合して登録します。取得や照合に失敗すると作品を停止し、拡張 ID、版（記録されている場合）、URL と理由をステージに表示します。指定を省略するとこのキャリアは追加されません。`keepEmbeddedData` との併用はできません。
+
 ブラウザはこれを必要としません。控えがバイト列の出所になり得る変換はローダーの `prepareExtensionAddition` の担当で、あちらは cache port を持ちます。この writer は持たないので出所はネットワークだけです。つまり**作品がどの形式を記録するか**は書けますが、見る人のブラウザにある控えには関与できません。
 
 ## API

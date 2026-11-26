@@ -23,6 +23,7 @@ import {
 } from '@kubohiroya/turbowarp-extension-loader';
 
 import {sb3SaveFormatSupport, type Sb3SaveCapabilities, type Sb3SaveFormat} from './index.js';
+import {remoteCarrierMarker, remoteCompatibilityCarrier} from './remote-compatibility-carrier.js';
 
 /** Raised for every refusal here, so a caller can tell this writer's failures apart. */
 export class Sb3WriterError extends Error {
@@ -43,6 +44,13 @@ const retainedURL = (spec: ExtensionSpec): string | undefined =>
 
 const legacyDataUrlPrefix = 'data:text/javascript;base64,';
 const maxExtensionBytes = 16 * 1024 * 1024;
+const isCompatibilityCarrier = (url: string) =>
+  Buffer.from(url.slice(legacyDataUrlPrefix.length, legacyDataUrlPrefix.length + 100), 'base64')
+    .toString('utf8')
+    .startsWith(remoteCarrierMarker);
+
+/** Allows callers that also support older writers to detect the opt-in. */
+export const supportsRemoteCompatibilityCarriers = true;
 
 /** The archive entry this writer gives an extension it stores as a file. */
 export const sb3PlusExtensionPath = (id: string) => `extensions/${id}.js`;
@@ -160,6 +168,11 @@ export function readSb3ExtensionPayloads(
   for (const [id, url] of Object.entries(urls)) {
     if (seen.has(id) || !declared.has(id)) continue;
     if (typeof url !== 'string' || !url.startsWith(legacyDataUrlPrefix)) continue;
+    if (isCompatibilityCarrier(url))
+      fail(
+        `Extension ${id} is a remote compatibility carrier without a Plus Manifest.`,
+        'K4-EXT-FORMAT-010',
+      );
     const bytes = decode(id, url.slice(legacyDataUrlPrefix.length));
     result.push(Object.freeze({id, format: 'embedded-data', bytes, sha256: sha256(bytes)}));
   }
@@ -187,6 +200,8 @@ export interface Sb3ExtensionFormatOptions {
    * kinds of host. A Plus host does not load it twice: it resolves the Manifest's own carrier.
    */
   readonly keepEmbeddedData?: boolean | undefined;
+  /** Explicit IDs for a small standard-host carrier beside a remote Manifest entry. */
+  readonly remoteCompatibilityCarriers?: readonly string[] | undefined;
   /** Injected for tests; defaults to the global `fetch`. Used to materialise a reference. */
   readonly fetch?: typeof fetch | undefined;
   readonly timeoutMs?: number | undefined;
@@ -258,6 +273,7 @@ export async function writeSb3ExtensionFormat(
     version,
     unsandboxed = [],
     keepEmbeddedData = false,
+    remoteCompatibilityCarriers = [],
     fetch: fetchBytes = fetch,
     timeoutMs = 30_000,
   }: Sb3ExtensionFormatOptions,
@@ -266,6 +282,20 @@ export async function writeSb3ExtensionFormat(
   if (!support.supported)
     fail(`Cannot save extensions as ${format}: ${support.reason}`, 'K4-EXT-FORMAT-003');
   const payloads = readSb3ExtensionPayloads(archive, project);
+  const compatibilityIds = new Set(remoteCompatibilityCarriers);
+  if (compatibilityIds.size && (keepEmbeddedData || !['remote-cacheable', 'remote-non-cacheable'].includes(format)))
+    fail(
+      'Remote compatibility carriers require a remote format and cannot be combined with keepEmbeddedData.',
+      'K4-EXT-FORMAT-010',
+    );
+  for (const id of compatibilityIds) {
+    const payload = payloads.find(item => item.id === id);
+    if (!payload || (payload.spec ? payload.spec.execution !== 'unsandboxed' : !unsandboxed.includes(id)))
+      fail(
+        `Remote compatibility carrier ${id} requires an explicitly unsandboxed extension.`,
+        'K4-EXT-FORMAT-010',
+      );
+  }
   if (!payloads.length) return Object.freeze({converted: Object.freeze([]), format});
 
   // Only the IDs the caller names may be requested unsandboxed. A legacy `data:` URL records no
@@ -284,24 +314,33 @@ export async function writeSb3ExtensionFormat(
   // What the project carried for each of these before the release below, so a rewrite can reuse
   // a carrier instead of fetching bytes that are already here.
   const carriers = new Map<string, string>();
+  const releasedPaths = new Set<string>();
+  const newArchiveEntries = new Map<string, Uint8Array>();
   // Release only what these extensions own now, then write back only the chosen form.
   for (const payload of payloads) {
     const held = nextURLs[payload.id];
-    if (typeof held === 'string' && held.startsWith(legacyDataUrlPrefix))
+    if (typeof held === 'string' && held.startsWith(legacyDataUrlPrefix) && !isCompatibilityCarrier(held))
       carriers.set(payload.id, held);
     delete nextURLs[payload.id];
-    if (payload.path !== undefined) delete archive[payload.path];
+    if (payload.path !== undefined) releasedPaths.add(payload.path);
   }
 
   const specs: Record<string, unknown>[] = [];
   const converted: string[] = [];
   for (const payload of payloads) {
     const {id, bytes, spec} = payload;
+    const useCompatibilityCarrier = compatibilityIds.has(id);
+    const headerVersion = useCompatibilityCarrier && bytes && version === undefined && spec?.version === undefined
+      ? /^\/\/ Version:[ \t]+([0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?)[ \t]*$/m.exec(
+          new TextDecoder().decode(bytes.subarray(0, 2048)),
+        )?.[1]
+      : undefined;
+    const recordedVersion = version ?? spec?.version ?? headerVersion;
     // A rewrite keeps what the existing entry declared, rather than resetting it.
     const metadata = {
       execution: (spec?.execution ??
         (unsandboxedIds.has(id) ? 'unsandboxed' : 'sandboxed')) as ExecutionMode,
-      ...((version ?? spec?.version) === undefined ? {} : {version: version ?? spec?.version}),
+      ...(recordedVersion === undefined ? {} : {version: recordedVersion}),
       ...(spec?.publisher === undefined ? {} : {publisher: spec.publisher}),
       capabilities: [...(spec?.capabilities ?? [])],
       dependencies: [...(spec?.dependencies ?? [])],
@@ -340,6 +379,11 @@ export async function writeSb3ExtensionFormat(
       const digest = payload.sha256 ?? (content && sha256(content));
       if (!digest)
         fail(`Extension ${id} has no digest to pin for a reference.`, 'K4-EXT-FORMAT-004');
+      if (useCompatibilityCarrier)
+        nextURLs[id] = remoteCompatibilityCarrier(
+          {id, url: url!, sha256: digest, version: recordedVersion},
+          {maxBytes: maxExtensionBytes, timeoutMs},
+        );
       // validateManifest enforces the HTTPS and digest policy for us.
       specs.push({id, source: {type: format, url}, sha256: digest, ...metadata});
       converted.push(id);
@@ -360,9 +404,9 @@ export async function writeSb3ExtensionFormat(
       continue;
     }
     const path = sb3PlusExtensionPath(id);
-    if (Object.hasOwn(archive, path))
+    if (Object.hasOwn(archive, path) && !releasedPaths.has(path))
       fail(`The archive already contains unrelated content at ${path}.`, 'K4-EXT-FORMAT-007');
-    archive[path] = content!;
+    newArchiveEntries.set(path, content!);
     specs.push({
       id,
       source: {type: 'embedded-file', ...origin, path},
@@ -374,7 +418,10 @@ export async function writeSb3ExtensionFormat(
 
   // Every form keeps the Manifest, including the data carrier: a standard host ignores it, and a
   // Plus host would otherwise lose the digest, the execution mode and the dependencies.
-  if (specs.length) project.turboWarpPlus = validateManifest({schemaVersion: 1, extensions: specs});
+  const manifest = specs.length ? validateManifest({schemaVersion: 1, extensions: specs}) : undefined;
+  for (const path of releasedPaths) delete archive[path];
+  for (const [path, bytes] of newArchiveEntries) archive[path] = bytes;
+  if (manifest) project.turboWarpPlus = manifest;
   else delete project.turboWarpPlus;
   project.extensionURLs = nextURLs;
   project.extensions = [...new Set([...declared, ...payloads.map((payload) => payload.id)])];
