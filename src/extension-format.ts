@@ -45,6 +45,7 @@ export class Sb3ExtensionFormatError extends Error {
 /** The archive entry an extension stored as a file is given. */
 export const sb3PlusExtensionPath = (id: string) => `extensions/${id}.js`;
 
+/** The prefix this package writes. Reading accepts every form {@link isExtensionDataUrl} does. */
 export const legacyDataUrlPrefix = 'data:text/javascript;base64,';
 export const maxExtensionBytes = 16 * 1024 * 1024;
 
@@ -61,11 +62,52 @@ export {decodeBase64, encodeBase64, sha256Hex};
 export const extensionDataUrl = (bytes: Uint8Array) =>
   `${legacyDataUrlPrefix}${encodeBase64(bytes)}`;
 
+/**
+ * The media types a host runs as a classic script. A `data:` extension may carry any of them:
+ * the Plus carrier writes `text/javascript`, while an extension loaded from a file in TurboWarp
+ * keeps whatever type the browser read it as, often `application/javascript`.
+ */
+const javaScriptMediaTypes = new Set([
+  'text/javascript',
+  'application/javascript',
+  'application/x-javascript',
+  'text/ecmascript',
+  'application/ecmascript',
+]);
+
+interface ExtensionDataUrlParts {
+  readonly base64: boolean;
+  readonly payload: string;
+}
+
+function splitExtensionDataUrl(url: string): ExtensionDataUrlParts | undefined {
+  if (!url.startsWith('data:')) return undefined;
+  const comma = url.indexOf(',');
+  if (comma < 0) return undefined;
+  const [mediaType = '', ...parameters] = url.slice('data:'.length, comma).split(';');
+  if (!javaScriptMediaTypes.has(mediaType.trim().toLowerCase())) return undefined;
+  const base64 = parameters.some((parameter) => parameter.trim().toLowerCase() === 'base64');
+  return {base64, payload: url.slice(comma + 1)};
+}
+
+/** Whether a URL is a `data:` URL holding JavaScript, in any of the forms a host runs. */
+export function isExtensionDataUrl(url: string): boolean {
+  return splitExtensionDataUrl(url) !== undefined;
+}
+
+function decodeParts(parts: ExtensionDataUrlParts, length?: number): Uint8Array {
+  if (parts.base64)
+    return decodeBase64(length === undefined ? parts.payload : parts.payload.slice(0, length));
+  return new TextEncoder().encode(decodeURIComponent(parts.payload));
+}
+
 /** Whether a `data:` URL is the small standard-host carrier beside a remote entry. */
 export function isRemoteCompatibilityCarrier(url: string): boolean {
+  const parts = splitExtensionDataUrl(url);
+  if (!parts) return false;
   try {
     // 100 base64 characters are whole 3-byte groups, enough to hold the marker.
-    const head = decodeBase64(url.slice(legacyDataUrlPrefix.length, legacyDataUrlPrefix.length + 100));
+    const head = decodeParts(parts, 100);
     return new TextDecoder().decode(head).startsWith(remoteCarrierMarker);
   } catch {
     return false;
@@ -74,9 +116,11 @@ export function isRemoteCompatibilityCarrier(url: string): boolean {
 
 /** Decode a `data:` carrier and refuse anything that is not plausible UTF-8 JavaScript. */
 export function decodeExtensionDataUrl(id: string, url: string): Uint8Array {
+  const parts = splitExtensionDataUrl(url);
+  if (!parts) fail(`Extension ${id} is not a JavaScript data URL.`, 'K4-EXT-FORMAT-001');
   let bytes: Uint8Array;
   try {
-    bytes = decodeBase64(url.slice(legacyDataUrlPrefix.length));
+    bytes = decodeParts(parts);
   } catch (cause) {
     fail(`Extension ${id} has an undecodable data URL.`, 'K4-EXT-FORMAT-001', cause);
   }
@@ -161,7 +205,7 @@ export function readSb3ExtensionPayloadsUnhashed(
     // The data carrier lives in the project document under the extension's own ID, which is also
     // where a standard host looks for it. The Manifest records that it is there, not the bytes.
     const carrier = isRecord(project.extensionURLs) ? project.extensionURLs[spec.id] : undefined;
-    if (typeof carrier !== 'string' || !carrier.startsWith(legacyDataUrlPrefix))
+    if (typeof carrier !== 'string' || !isExtensionDataUrl(carrier))
       fail(
         `The project document is missing the data: carrier for ${spec.id}.`,
         'K4-EXT-FORMAT-002',
@@ -185,7 +229,7 @@ export function readSb3ExtensionPayloadsUnhashed(
   const urls = isRecord(project.extensionURLs) ? project.extensionURLs : {};
   for (const [id, url] of Object.entries(urls)) {
     if (seen.has(id) || !declared.has(id)) continue;
-    if (typeof url !== 'string' || !url.startsWith(legacyDataUrlPrefix)) continue;
+    if (typeof url !== 'string' || !isExtensionDataUrl(url)) continue;
     if (isRemoteCompatibilityCarrier(url))
       fail(
         `Extension ${id} is a remote compatibility carrier without a Plus Manifest.`,
@@ -361,7 +405,7 @@ export async function convertSb3ExtensionFormats(
       continue;
     }
     const held = nextURLs[payload.id];
-    if (typeof held === 'string' && held.startsWith(legacyDataUrlPrefix) && !isRemoteCompatibilityCarrier(held))
+    if (typeof held === 'string' && isExtensionDataUrl(held) && !isRemoteCompatibilityCarrier(held))
       carriers.set(payload.id, held);
     delete nextURLs[payload.id];
     if (payload.path !== undefined) releasedPaths.add(payload.path);
