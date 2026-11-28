@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
+
+Released on 2026-11-28.
 
 - Name cached project data (#902 of turbowarp-plus-editor). When a project is opened, each
   `remote-cacheable` item it writes to the Loader cache is recorded with what the project calls it:
