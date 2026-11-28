@@ -163,6 +163,40 @@ describe('convertSb3ExtensionFormats', () => {
     });
   });
 
+  it('reads a legacy data: extension in every JavaScript form a host saves', async () => {
+    const base64 = btoa(String.fromCharCode(...encode(beta)));
+    const forms = {
+      file: `data:application/javascript;base64,${base64}`,
+      charset: `data:text/javascript;charset=utf-8;base64,${base64}`,
+      legacyType: `data:application/x-javascript;base64,${base64}`,
+      plain: `data:text/javascript,${encodeURIComponent(beta)}`,
+    };
+    const project = {targets: [], extensions: Object.keys(forms), extensionURLs: forms};
+    const payloads = await readSb3Extensions({}, project);
+    const digest = await sha256Hex(encode(beta));
+    expect(payloads.map(({id, format, sha256}) => ({id, format, sha256}))).toEqual(
+      Object.keys(forms).map((id) => ({id, format: 'embedded-data', sha256: digest})),
+    );
+
+    // A form change keeps the bytes, so the digest survives the move to a reference and back.
+    const remote = await convert({}, project, {file: {format: 'remote-cacheable', url: betaURL}});
+    expect(specOf(remote.project, 'file')).toMatchObject({sha256: digest});
+    expect(remote.project.extensionURLs).not.toHaveProperty('file');
+    expect(remote.project.extensionURLs).toMatchObject({plain: forms.plain});
+    const back = await convert(remote.archive, remote.project, {file: {format: 'embedded-data'}}, serving({[betaURL]: beta}));
+    const [again] = (await readSb3Extensions(back.archive, back.project)).filter(({id}) => id === 'file');
+    expect(again).toMatchObject({format: 'embedded-data', sha256: digest});
+  });
+
+  it('leaves a data: URL that is not JavaScript alone', async () => {
+    const project = {
+      targets: [],
+      extensions: ['image'],
+      extensionURLs: {image: `data:image/png;base64,${btoa('png')}`},
+    };
+    expect(await readSb3Extensions({}, project)).toEqual([]);
+  });
+
   it('embeds a remote-non-cacheable extension without asking for a stored copy', async () => {
     const {archive, project} = await plusProject();
     const manifest = project.turboWarpPlus.extensions[0]!;

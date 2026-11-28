@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Read a legacy `data:` extension in every JavaScript form a host saves (#901 of
+  turbowarp-plus-editor). Besides `data:text/javascript;base64,`, `readSb3Extensions` and
+  `convertSb3ExtensionFormats` now accept `application/javascript`, `application/x-javascript`,
+  `text/ecmascript` and `application/ecmascript`, media type parameters such as `charset`, and a
+  percent-encoded payload. An extension loaded from a file in TurboWarp is often saved as
+  `data:application/javascript;base64,`, and such an extension was left out of the list without a
+  word. A `data:` URL of another media type is still left alone. Written carriers keep the
+  `data:text/javascript;base64,` form. Add `isExtensionDataUrl` to tell the accepted forms apart.
+
 ## 0.7.0
 
 Released on 2026-11-28.
