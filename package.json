@@ -39,6 +39,11 @@
       "types": "./dist/writer.d.ts",
       "import": "./dist/writer.js"
     },
+    "./extension-format": {
+      "types": "./dist/extension-format.d.ts",
+      "import": "./dist/extension-format.js",
+      "default": "./dist/extension-format.js"
+    },
     "./project-payloads": {
       "types": "./dist/project-payloads.d.ts",
       "import": "./dist/project-payloads.js",

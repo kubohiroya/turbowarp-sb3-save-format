@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import {encodeBase64} from './bytes.js';
+
 export const remoteCarrierMarker = '// TurboWarp Plus remote compatibility carrier v1\n';
 
 interface RemoteCarrierSource {
@@ -189,5 +191,5 @@ export function remoteCompatibilityCarrier(
   limits: {maxBytes: number; timeoutMs: number},
 ): string {
   const script = `${remoteCarrierMarker}(${runRemoteCarrier.toString()})(Scratch, ${JSON.stringify(source)}, ${JSON.stringify(limits)});\n`;
-  return `data:text/javascript;base64,${Buffer.from(script, 'utf8').toString('base64')}`;
+  return `data:text/javascript;base64,${encodeBase64(new TextEncoder().encode(script))}`;
 }

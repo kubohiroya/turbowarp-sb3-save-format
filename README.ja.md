@@ -93,9 +93,36 @@ import '@kubohiroya/turbowarp-sb3-save-format/styles.css';
 
 コンポーネントは古典的なJSXランタイムで出力しています。React 16 のホストがこれを必要とするためです。`draft` と `onDraftChange` を渡すと制御でき、渡さなければ自分で下書きを保持します。
 
+## 選んだ拡張の形式を変える（ブラウザーとNode）
+
+`./extension-format` が形式変換の唯一の実装です。`crypto.subtle` でハッシュを取り、`Buffer` を使わずに base64 を扱い、ネットワークには渡された `fetch` だけで接続するため、同じコードがブラウザーでも Node でも動きます。下の `./writer` はこれを使う Node 向けの入口です。
+
+```ts
+import {sb3SaveCapabilities} from '@kubohiroya/turbowarp-sb3-save-format';
+import {
+  convertSb3ExtensionFormats,
+  readSb3Extensions,
+} from '@kubohiroya/turbowarp-sb3-save-format/extension-format';
+
+const extensions = await readSb3Extensions(archive, project); // ID、形式、SHA-256、判明していれば URL
+const result = await convertSb3ExtensionFormats(
+  archive,
+  project,
+  {'my.extension.id': {format: 'remote-cacheable', url: 'https://example.test/ext@1.2.0/ext.js'}},
+  {capabilities: sb3SaveCapabilities(), signal},
+);
+// result.archive と result.project は新しい値。archive と project は変更されない。
+```
+
+- 変更表に挙げた拡張だけを変換します。他の拡張、アーカイブのエントリ、作品のフィールド（Manifest の `uri` を含む）はそのまま残します。
+- 形式の変更ではコードを変えません。バイト列と SHA-256、実行モード、依存関係、版を維持します。埋め込みの2形式は取得元の URL を保持するので、後で取得し直さずに同じリモート参照へ戻せます。
+- `extensionURLs` にしか記録されていない旧来の `data:` 拡張も読みます。取得元は不明なので、リモート参照にするには呼び出し側が URL を渡します。ID から推測しません。
+- リモート参照から埋め込みへの変換は、固定されたバイト列を `redirect: 'error'`、`credentials: 'omit'`、`cache: 'no-store'` で取得し、違うバイト列を拒否します。cache port を持たないので、`remote-non-cacheable` を埋め込むときに保存された控えを読み書きしません。
+- 1回の呼び出しの変換はすべて成功するか、`Sb3ExtensionFormatError` を投げて何も返さないかのどちらかです。版の選択・解決はこのモジュールの担当ではありません。
+
 ## 形式を書く（Node）
 
-`./writer` は、展開済みのSB3に形式を書きます。アーカイブのエントリと解析済みの作品を受け取るので、ZIPへの詰め直しは呼び出し側の仕事です。`node:crypto` でハッシュを取るため別の入口にしてあり、root の export は依存ゼロのままです。
+`./writer` は、展開済みのSB3に形式を書きます。アーカイブのエントリと解析済みの作品を受け取るので、ZIPへの詰め直しは呼び出し側の仕事です。すべての拡張を1つの形式へその場で書き換え、変換そのものは `convertSb3ExtensionFormats` を呼びます。同期の読み取りで `node:crypto` を使うため別の入口にしてあり、root の export は依存ゼロのままです。
 
 ```ts
 import {sb3SaveCapabilities} from '@kubohiroya/turbowarp-sb3-save-format';
@@ -110,7 +137,7 @@ await writeSb3ExtensionFormat(archive, project, 'embedded-file', {
 
 `remoteCompatibilityCarriers: ['拡張ID']` を指定すると、リモート形式の Plus Manifest に加え、標準 TurboWarp 用の小さな `data:` スクリプトを格納します。対象はサンドボックス外で動く、評価時に同期的に登録する拡張です。標準ホストで閲覧者が拡張の実行とネットワーク取得を許可すると、キャリアは固定した HTTPS URL から本体を取得し、SHA-256 を照合して登録します。取得や照合に失敗すると作品を停止し、拡張 ID、版（記録されている場合）、URL と理由をステージに表示します。指定を省略するとこのキャリアは追加されません。`keepEmbeddedData` との併用はできません。
 
-ブラウザはこれを必要としません。控えがバイト列の出所になり得る変換はローダーの `prepareExtensionAddition` の担当で、あちらは cache port を持ちます。この writer は持たないので出所はネットワークだけです。つまり**作品がどの形式を記録するか**は書けますが、見る人のブラウザにある控えには関与できません。
+ブラウザーは `./extension-format` を使います。控えがバイト列の出所になり得る変換はローダーの `prepareExtensionAddition` の担当で、あちらは cache port を持ちます。この writer は持たないので出所はネットワークだけです。つまり**作品がどの形式を記録するか**は書けますが、見る人のブラウザにある控えには関与できません。
 
 ## API
 

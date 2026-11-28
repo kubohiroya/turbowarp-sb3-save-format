@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Add `./extension-format`, the one implementation of the extension form conversion, for a browser
+  and Node alike (#901 of turbowarp-plus-editor). `convertSb3ExtensionFormats` converts only the
+  extensions it is given, returns a new archive and project and leaves its input untouched, keeps
+  the same bytes and digest across a form change, accepts a cancellation signal, and fetches a
+  reference with `cache: 'no-store'` and no cache port. `readSb3Extensions` lists every extension
+  with its digest, including a legacy `data:` one whose origin is unknown.
+- `./writer` now delegates its conversion to it. Its API and refusals are unchanged.
+- A conversion now keeps the Manifest's own fields beside `extensions`, such as `uri`, which the
+  writer used to drop, and refuses carried bytes that differ from the digest the Manifest pins.
+- The remote compatibility carrier no longer uses `Buffer`.
+
 ## 0.4.0-rc.1
 
 Released on 2026-11-03. One dependency change, no API change.
