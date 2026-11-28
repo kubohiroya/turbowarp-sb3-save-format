@@ -113,7 +113,7 @@
     }
   },
   "dependencies": {
-    "@kubohiroya/turbowarp-extension-loader": "^0.16.1",
+    "@kubohiroya/turbowarp-extension-loader": "^0.17.0",
     "@turbowarp/jszip": "3.12.0"
   }
 }
