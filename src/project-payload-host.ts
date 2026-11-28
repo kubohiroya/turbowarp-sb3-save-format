@@ -50,8 +50,9 @@ export function createProjectPayloadService(codec: ReturnType<typeof createProje
 
     /**
      * `bucket` is the project URI the cache files this project's claims under, read when needed;
-     * `projectName` is the title recorded beside them. Both are optional: without a bucket nothing
-     * is released, since a claim filed as shared belongs to no one project.
+     * `projectName(project)` is the title recorded beside them, read from the project just decoded
+     * (its restored JSON) so a title is never taken from the project open before. Both are optional:
+     * without a bucket nothing is released, since a claim filed as shared belongs to no one project.
      */
     function createProjectPayloadHost(vm: any, {fetch, cache, approve, validate, canEdit, vmModules, bucket, projectName}: any) {
         let selection = new Map<string, PayloadEntry>();
@@ -95,7 +96,7 @@ export function createProjectPayloadService(codec: ReturnType<typeof createProje
                 revision++;
                 if (cache && result.claims?.length) {
                     // Complete writes before the next queued project changes the cache bucket.
-                    const title = typeof projectName === 'function' ? projectName() : undefined;
+                    const title = typeof projectName === 'function' ? projectName(result.project) : undefined;
                     const named = (label: object) => typeof title === 'string' && title ? {...label, projectName: title} : label;
                     const byKey = new Map<string, {bytes: Uint8Array; labels: any[]}>();
                     for (const [key, bytes, labels = []] of result.claims as PayloadCacheClaim[]) {

@@ -55,11 +55,14 @@ async function remoteProject() {
     return zip.generateAsync({type: 'uint8array'});
 }
 
-async function openProject(options: {bucket?: string; files?: Record<string, Uint8Array>} = {}) {
+async function openProject(options: {bucket?: string; files?: Record<string, Uint8Array>; named?: any[]} = {}) {
     const {cache, calls, store} = fakeCache();
     const vm = fakeVM(project(), options.files ?? {[filename]: bytes});
     const host: any = createProjectPayloadHost(vm, {fetch: fetchBytes, cache, approve: async () => true, canEdit: true,
-        bucket: () => options.bucket ?? 'https://example.test/projects/a', projectName: () => 'Story'});
+        bucket: () => options.bucket ?? 'https://example.test/projects/a', projectName: (decoded: any) => {
+            options.named?.push(decoded);
+            return 'Story';
+        }});
     host.loadStarted();
     const result = await host.read(await remoteProject(), undefined);
     await host.loaded(result, undefined);
@@ -71,6 +74,14 @@ describe('naming cached project data', () => {
         const {calls} = await openProject();
         expect(calls.put).toEqual([[sha256, {ref: `${id}#0`, kind: 'backdrop', name: 'Sky', url, projectName: 'Story'}]]);
         expect(calls.describe).toEqual([[sha256, [{ref: `${id}#1`, kind: 'costume', name: 'Cloud', url, projectName: 'Story'}]]]);
+    });
+
+    it('asks for the title of the project just decoded, not of the project open before', async () => {
+        const named: any[] = [];
+        await openProject({named});
+        expect(named).toHaveLength(1);
+        expect(named[0].targets.map((target: any) => target.costumes[0].name)).toEqual(['Sky', 'Cloud']);
+        expect(named[0]).not.toHaveProperty('turboWarpPlusPayloads');
     });
 });
 
