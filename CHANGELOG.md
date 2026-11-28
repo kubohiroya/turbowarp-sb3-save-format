@@ -1,6 +1,26 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
+
+Released on 2026-11-28.
+
+- Name cached project data (#902 of turbowarp-plus-editor). When a project is opened, each
+  `remote-cacheable` item it writes to the Loader cache is recorded with what the project calls it:
+  one label per use, with the costume, backdrop, sound or document kind, its name, the URL it was
+  fetched from and the project title the host supplies. A cache that predates labels keeps the
+  bytes as before. The Loader drops credentials and queries from the recorded URL.
+- Add `cacheEmbedding()` to the project payload host: embed chosen cached items of the open
+  project as `embedded-data` or `embedded-file`. Only items this project pins with that SHA-256
+  change, and only when their bytes still match the pin and the cached copy; anything else is
+  reported with a reason. The change is unsaved until the project is saved.
+- Add `releaseAfterSave(digests)`: once the host knows a save succeeded, release this project's
+  cache claims on digests the last written archive embedded. Claims of other projects, the shared
+  bucket and digests a remote reference still uses are kept. The host takes the project's cache
+  bucket as `bucket`, and records nothing without one.
+- Keep the URL and digest an embedded item came from in `turboWarpPlusPayloadOrigins`, beside the
+  manifest, so the payload formats screen offers the same URL to reference it remotely again. A
+  reader that predates it ignores the key.
+- Depend on the loader `^0.17.0`, which records labels.
 
 - Add `./extension-format`, the one implementation of the extension form conversion, for a browser
   and Node alike (#901 of turbowarp-plus-editor). `convertSb3ExtensionFormats` converts only the
