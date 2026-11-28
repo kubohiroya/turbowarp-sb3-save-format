@@ -115,11 +115,49 @@ import '@kubohiroya/turbowarp-sb3-save-format/styles.css';
 The component is emitted with the classic JSX runtime, which React 16 hosts need. Pass `draft` and
 `onDraftChange` to control it; leave them out and it keeps its own draft.
 
+## Changing the form of chosen extensions (browser and Node)
+
+`./extension-format` holds the one implementation of the conversion. It hashes with
+`crypto.subtle`, encodes base64 without `Buffer` and reaches the network only through the `fetch`
+it is given, so the same code runs in a browser and in Node. `./writer` below is the Node
+convenience over it.
+
+```ts
+import {sb3SaveCapabilities} from '@kubohiroya/turbowarp-sb3-save-format';
+import {
+  convertSb3ExtensionFormats,
+  readSb3Extensions,
+} from '@kubohiroya/turbowarp-sb3-save-format/extension-format';
+
+const extensions = await readSb3Extensions(archive, project); // id, form, sha256, url when known
+const result = await convertSb3ExtensionFormats(
+  archive,
+  project,
+  {'my.extension.id': {format: 'remote-cacheable', url: 'https://example.test/ext@1.2.0/ext.js'}},
+  {capabilities: sb3SaveCapabilities(), signal},
+);
+// result.archive and result.project are new; archive and project are untouched.
+```
+
+- Only the extensions named in the change map are converted. Every other extension, archive entry
+  and project field — including the Manifest's `uri` — is kept as it was.
+- A form change keeps the code: the same bytes and the same SHA-256, the execution mode,
+  dependencies and version. Both carried forms keep the address the bytes came from, so a later
+  conversion can go back to the same reference without a fetch.
+- A legacy `data:` extension recorded only in `extensionURLs` is read too. Its origin is unknown,
+  so turning it into a reference needs the URL from the caller; nothing is guessed from its ID.
+- Going from a reference to a carried form fetches the pinned bytes with `redirect: 'error'`,
+  `credentials: 'omit'` and `cache: 'no-store'`, and refuses any other bytes. There is no cache
+  port: embedding a `remote-non-cacheable` extension never reads or writes a stored copy.
+- All the conversions in one call succeed together or the call throws `Sb3ExtensionFormatError`
+  and nothing is returned. Choosing or resolving a version is not this module's job.
+
 ## Writing a chosen form (Node)
 
 `./writer` writes a form into an SB3 that is already unpacked: it takes the archive entries and the
-parsed project, so packing stays with the caller. It is a separate entry point because it hashes
-with `node:crypto`; the root export stays dependency-free.
+parsed project, so packing stays with the caller. It converts every extension to one form, in
+place, by calling `convertSb3ExtensionFormats`. It is a separate entry point because its
+synchronous reader hashes with `node:crypto`; the root export stays dependency-free.
 
 ```ts
 import {sb3SaveCapabilities} from '@kubohiroya/turbowarp-sb3-save-format';
@@ -132,8 +170,8 @@ await writeSb3ExtensionFormat(archive, project, 'embedded-file', {
 });
 ```
 
-A browser does not need this. Converting a form whose bytes may come from the cached copy is the
-loader's `prepareExtensionAddition`, which has a cache port. This writer has none, so its only byte
+A browser uses `./extension-format` instead. Converting a form whose bytes may come from the
+cached copy is the loader's `prepareExtensionAddition`, which has a cache port. This writer has none, so its only byte
 source is the network: it can write **which form a work records**, never the copy a viewer's
 browser holds.
 
