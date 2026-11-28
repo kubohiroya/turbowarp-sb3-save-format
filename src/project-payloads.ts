@@ -449,7 +449,7 @@ export function createProjectPayloadCodec(extensionProjectArchiveOptions: Payloa
             zip.file('project.json', json);
         }
         const restored = zip ? await zip.generateAsync({type: 'uint8array', compression: 'DEFLATE'}) : json;
-        return {input: restored, settings, claims, origins: readOrigins(originRecord, settings)};
+        return {input: restored, settings, claims, origins: readOrigins(originRecord, settings), project};
     }
 
     /**
