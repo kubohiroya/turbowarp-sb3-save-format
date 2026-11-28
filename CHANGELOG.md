@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.7.1
+
+Released on 2026-11-28.
 
 - Read a legacy `data:` extension in every JavaScript form a host saves (#901 of
   turbowarp-plus-editor). Besides `data:text/javascript;base64,`, `readSb3Extensions` and
