@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.2
+
+Released on 2026-11-28.
+
+- Name cached data after the project being opened (#902 of turbowarp-plus-editor). The payload
+  host calls `projectName(project)` with the project it just decoded (its restored JSON), and the
+  result of `decodePayloads` carries that project as `project`. A host whose title only updates
+  after the load finished used to label the new project's data with the previous project's title.
+  A `projectName()` that ignores the argument still works.
+
 ## 0.7.1
 
 Released on 2026-11-28.
@@ -12,11 +22,6 @@ Released on 2026-11-28.
   `data:application/javascript;base64,`, and such an extension was left out of the list without a
   word. A `data:` URL of another media type is still left alone. Written carriers keep the
   `data:text/javascript;base64,` form. Add `isExtensionDataUrl` to tell the accepted forms apart.
-- Name cached data after the project being opened (#902 of turbowarp-plus-editor). The payload
-  host calls `projectName(project)` with the project it just decoded (its restored JSON), and the
-  result of `decodePayloads` carries that project as `project`. A host whose title only updates
-  after the load finished used to label the new project's data with the previous project's title.
-  A `projectName()` that ignores the argument still works.
 
 ## 0.7.0
 
